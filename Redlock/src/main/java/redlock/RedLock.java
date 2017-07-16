@@ -46,15 +46,7 @@ public class RedLock {
         }
     }
 
-    public static void main(String[] args) {
-        RedLock redLock = new RedLock("localhost", 6379);
-        Lock lock1 = redLock.lock("wa");
-        Lock lock2 = redLock.lock("wa");
-        System.out.println(lock1);
-        System.out.println(lock2);
-        redLock.unlock(lock1);
-        Lock lock3 = redLock.lock("wa");
-        System.out.println(lock3);
-        redLock.unlock(lock3);
+    public static RedLock create() {
+        return new RedLock("127.0.0.1", 6379);
     }
 }
