@@ -4,13 +4,16 @@ package redlock;
 import redis.clients.jedis.JedisPool;
 import redlock.pubsub.Pubsub;
 
+import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class RedLock {
 
-    static final String prefix = "REDLOCK.";
+    static final String kPrefix = "REDLOCK.";
 
-    static final String channel = "REDLOCK.CHANNEL.";
+    static final String cPrefix = "REDLOCK.CHANNEL.";
 
     static final String script = "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end";
 
@@ -37,10 +40,11 @@ public class RedLock {
     }
 
     public Lock lock(Object lock, long ttl) throws InterruptedException {
-        String key = prefix + String.valueOf(lock.hashCode());
+        String key = kPrefix + String.valueOf(lock.hashCode());
         String value = UUID.randomUUID().toString();
         String ret;
-//        CountDownLatch latch = pubsub.subscribe(channel + lock.hashCode());
+        String channel = cPrefix + lock.hashCode();
+        CountDownLatch latch = pubsub.subscribe(channel);
         while (true) {
             if (ttl > 0) {
                 ret = client.set(key, value, "NX", "EX", ttl);
@@ -48,17 +52,18 @@ public class RedLock {
                 ret = client.set(key, value, "NX");
             }
             if ("OK".equals(ret)) {
+                pubsub.unsubscribe(channel);
                 return new Lock(key, value);
             } else {
-                Thread.sleep(100);
-//                latch.await(100, TimeUnit.MILLISECONDS);
+                latch.await(100, TimeUnit.MILLISECONDS);
             }
         }
     }
 
     public void unlock(Lock lock) {
+        String channel = cPrefix + lock.hashCode();
         client.eval(script, lock.getKey(), lock.getValue());
-//        pubsub.unsubscribe(channel + lock.hashCode());
+        pubsub.unsubscribe(channel);
     }
 
     public static RedLock create() {
@@ -79,7 +84,7 @@ public class RedLock {
             try {
                 Lock lock = redLock.lock("test");
                 System.out.println("UNLOCKING");
-                Thread.sleep(5000);
+                Thread.sleep(10000);
                 System.out.println("UNLOCKED");
                 redLock.unlock(lock);
             } catch (Exception e) {
@@ -87,6 +92,11 @@ public class RedLock {
             }
         });
         t.start();
+        Thread.sleep(1000);
+        System.out.println(new Date().getTime());
+        Lock lock = redLock.lock("test");
+        System.out.println(new Date().getTime());
+        redLock.unlock(lock);
         redLock.shutdown();
     }
 }

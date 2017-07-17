@@ -2,7 +2,10 @@ package redlock.pubsub;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisPubSub;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -13,19 +16,24 @@ public class Pubsub {
 
     ExecutorService es = Executors.newCachedThreadPool();
 
+    Map<String, JedisPubSub> map;
+
     public Pubsub(JedisPool pool) {
         this.pool = pool;
+        this.map = new ConcurrentHashMap<>();
     }
 
     public CountDownLatch subscribe(String channel) {
         CountDownLatch latch = new CountDownLatch(1);
-        es.execute(() -> {
+        es.submit(() -> {
             try (Jedis jedis = pool.getResource()) {
-                jedis.subscribe(new PubsubListener(pubsubCommand -> {
+                PubsubListener listener = new PubsubListener(pubsubCommand -> {
                     if (channel.equals(pubsubCommand.getChannel()) && "OK".equals(pubsubCommand.getMessage())) {
                         latch.countDown();
                     }
-                }), channel);
+                });
+                map.put(channel, listener);
+                jedis.subscribe(listener, channel);
             }
         });
         return latch;
@@ -34,6 +42,11 @@ public class Pubsub {
     public void unsubscribe(String channel) {
         try (Jedis jedis = pool.getResource()) {
             jedis.publish(channel, "OK");
+            JedisPubSub pubSub = map.get(channel);
+            if (pubSub != null) {
+                pubSub.unsubscribe();
+                map.remove(channel);
+            }
         }
     }
 
