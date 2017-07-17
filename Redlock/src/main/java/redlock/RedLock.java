@@ -5,8 +5,6 @@ import redis.clients.jedis.JedisPool;
 import redlock.pubsub.Pubsub;
 
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
 public class RedLock {
 
@@ -20,13 +18,17 @@ public class RedLock {
 
     Pubsub pubsub;
 
-    public RedLock(String host, int port) {
+    RedLock(String host, int port) {
         JedisPool pool = new JedisPool(host, port);
         this.pubsub = new Pubsub(pool);
         this.client = new RedisClient(pool);
     }
 
     public Lock tryLock(Object lock) {
+        return tryLock(lock, 0);
+    }
+
+    public Lock tryLock(Object lock, long ttl) {
         return null;
     }
 
@@ -38,6 +40,7 @@ public class RedLock {
         String key = prefix + String.valueOf(lock.hashCode());
         String value = UUID.randomUUID().toString();
         String ret;
+//        CountDownLatch latch = pubsub.subscribe(channel + lock.hashCode());
         while (true) {
             if (ttl > 0) {
                 ret = client.set(key, value, "NX", "EX", ttl);
@@ -47,18 +50,43 @@ public class RedLock {
             if ("OK".equals(ret)) {
                 return new Lock(key, value);
             } else {
-                CountDownLatch latch = pubsub.subscribe(channel + lock.hashCode());
-                latch.await(100, TimeUnit.MILLISECONDS);
+                Thread.sleep(100);
+//                latch.await(100, TimeUnit.MILLISECONDS);
             }
         }
     }
 
     public void unlock(Lock lock) {
         client.eval(script, lock.getKey(), lock.getValue());
-        pubsub.unsubscribe(channel + lock.hashCode());
+//        pubsub.unsubscribe(channel + lock.hashCode());
     }
 
     public static RedLock create() {
         return new RedLock("127.0.0.1", 6379);
+    }
+
+    public static RedLock create(String host, int port) {
+        return new RedLock(host, port);
+    }
+
+    public void shutdown() {
+        this.pubsub.shutdown();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        RedLock redLock = RedLock.create();
+        Thread t = new Thread(() -> {
+            try {
+                Lock lock = redLock.lock("test");
+                System.out.println("UNLOCKING");
+                Thread.sleep(5000);
+                System.out.println("UNLOCKED");
+                redLock.unlock(lock);
+            } catch (Exception e) {
+                throw new IllegalStateException(e);
+            }
+        });
+        t.start();
+        redLock.shutdown();
     }
 }
