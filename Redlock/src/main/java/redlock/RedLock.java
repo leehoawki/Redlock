@@ -15,16 +15,16 @@ public class RedLock {
 
     Pubsub pubsub;
 
-    RedLock(String host, int port) {
-        this.client = new RedisSingle(host, port);
+    RedLock(String host, int port, String password) {
+        this.client = new RedisSingle(host, port, password);
     }
 
     public static RedLock create() {
-        return create("127.0.0.1", 6379);
+        return create("127.0.0.1", 6379, null);
     }
 
-    public static RedLock create(String host, int port) {
-        RedLock redLock = new RedLock(host, port);
+    public static RedLock create(String host, int port, String password) {
+        RedLock redLock = new RedLock(host, port, password);
         Pubsub pubsub = new Pubsub();
         redLock.setPubsub(pubsub);
         return redLock;

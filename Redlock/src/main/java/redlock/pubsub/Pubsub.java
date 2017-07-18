@@ -38,10 +38,9 @@ public class Pubsub {
 
     public void unsubscribe(String channel, RedisClient client) {
         client.publish(channel, "OK");
-        JedisPubSub pubSub = map.get(channel);
+        JedisPubSub pubSub = map.remove(channel);
         if (pubSub != null) {
             pubSub.unsubscribe();
-            map.remove(channel);
         }
     }
 

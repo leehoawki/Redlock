@@ -11,10 +11,6 @@ public class RedisSingle implements RedisClient {
 
     JedisPool pool;
 
-    public RedisSingle(String host, int port) {
-        pool = new JedisPool(host, port);
-    }
-
     public RedisSingle(String host, int port, String password) {
         pool = new JedisPool(new JedisPoolConfig(), host, port, 2000, password);
     }
