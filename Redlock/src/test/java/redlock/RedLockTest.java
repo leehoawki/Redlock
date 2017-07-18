@@ -3,32 +3,36 @@ package redlock;
 import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Test;
+import redlock.lock.RLock;
 
 public class RedLockTest extends TestCase {
 
     RedLock redLock;
 
+    RLock lock;
+
     @Override
     public void setUp() {
         redLock = RedLock.create();
+        lock = redLock.getLock("test");
     }
 
-    public void tearDown() {
+    public void tearDown() throws InterruptedException {
         redLock.shutdown();
     }
 
     @Test
     public void testLock() throws InterruptedException {
-        Lock lock = redLock.lock("test");
-        redLock.unlock(lock);
+        lock.lock();
+        lock.unlock();
     }
 
     @Test
     public void testTrylock() throws InterruptedException {
-        Lock lock1 = redLock.tryLock("test");
-        Lock lock2 = redLock.tryLock("test");
-        Assert.assertTrue(lock1 != null);
-        Assert.assertTrue(lock2 == null);
-        redLock.unlock(lock1);
+        boolean r1 = lock.tryLock();
+        boolean r2 = lock.tryLock();
+        Assert.assertTrue(r1);
+        Assert.assertTrue(!r2);
+        lock.unlock();
     }
 }
