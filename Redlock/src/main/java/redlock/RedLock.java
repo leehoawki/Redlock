@@ -28,10 +28,12 @@ public class RedLock {
     }
 
     public Lock tryLock(Object lock) {
-        return tryLock(lock, 0);
-    }
-
-    public Lock tryLock(Object lock, long ttl) {
+        String key = kPrefix + String.valueOf(lock.hashCode());
+        String value = UUID.randomUUID().toString();
+        String ret = client.set(key, value, "NX");
+        if ("OK".equals(ret)) {
+            return new Lock(key, value);
+        }
         return null;
     }
 
