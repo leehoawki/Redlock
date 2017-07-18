@@ -5,7 +5,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import redlock.lock.RLock;
 
-public class RedLockTest extends TestCase {
+public class RLockTest extends TestCase {
 
     RedLock redLock;
 
