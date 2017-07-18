@@ -28,8 +28,10 @@ public class Pubsub {
                     latch.countDown();
                 }
             });
-            map.put(channel, listener);
-            client.subscribe(listener, channel);
+            JedisPubSub ret = map.putIfAbsent(channel, listener);
+            if (ret == null) {
+                client.subscribe(listener, channel);
+            }
         });
         return latch;
     }

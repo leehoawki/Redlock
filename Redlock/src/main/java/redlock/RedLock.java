@@ -52,7 +52,7 @@ public class RedLock {
                 System.out.println("LOCK2,LOCKING:" + new Date());
                 lock2.lock();
                 System.out.println("LOCK2,LOCKED:" + new Date());
-                Thread.sleep(10000);
+                Thread.sleep(5000);
                 System.out.println("LOCK2,UNLOCKING:" + new Date());
                 lock2.unlock();
                 System.out.println("LOCK2,UNLOCKED:" + new Date());
@@ -64,7 +64,7 @@ public class RedLock {
         System.out.println("LOCK1,LOCKING:" + new Date());
         lock1.lock();
         System.out.println("LOCK1,LOCKED:" + new Date());
-        Thread.sleep(10000);
+        Thread.sleep(5000);
         System.out.println("LOCK1,UNLOCKING:" + new Date());
         lock1.unlock();
         System.out.println("LOCK1,UNLOCKED:" + new Date());
