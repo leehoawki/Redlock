@@ -1,7 +1,7 @@
 package redlock.connection;
 
 
-import redlock.pubsub.PubsubListener;
+import redis.clients.jedis.JedisPubSub;
 
 public interface RedisClient {
 
@@ -13,7 +13,9 @@ public interface RedisClient {
 
     Object eval(String script, String key, String arg);
 
-    void subscribe(PubsubListener listener, String channel);
+    void subscribe(String channel, JedisPubSub listener);
 
     void publish(String channel, String ok);
+
+    void close();
 }

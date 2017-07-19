@@ -3,16 +3,21 @@ package redlock.connection;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
-import redlock.pubsub.PubsubListener;
+import redis.clients.jedis.JedisPubSub;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RedisSingle implements RedisClient {
 
     JedisPool pool;
 
+    ExecutorService es;
+
     public RedisSingle(String host, int port, String password) {
         pool = new JedisPool(new JedisPoolConfig(), host, port, 2000, password);
+        this.es = Executors.newCachedThreadPool();
     }
 
     @Override
@@ -44,10 +49,12 @@ public class RedisSingle implements RedisClient {
     }
 
     @Override
-    public void subscribe(PubsubListener listener, String channel) {
-        try (Jedis jedis = pool.getResource()) {
-            jedis.subscribe(listener, channel);
-        }
+    public void subscribe(String channel, JedisPubSub listener) {
+        es.submit(() -> {
+            try (Jedis jedis = pool.getResource()) {
+                jedis.subscribe(listener, channel);
+            }
+        });
     }
 
     @Override
@@ -55,5 +62,11 @@ public class RedisSingle implements RedisClient {
         try (Jedis jedis = pool.getResource()) {
             jedis.publish(channel, message);
         }
+    }
+
+    @Override
+    public void close() {
+        this.pool.close();
+        this.es.shutdownNow();
     }
 }

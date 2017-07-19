@@ -23,14 +23,13 @@ public class RLockImpl implements RLock {
 
     RedisClient client;
 
-    Pubsub pubsub;
+    static Pubsub PUBSUB = new Pubsub();
 
-    public RLockImpl(Object ojbect, RedisClient client, Pubsub pubsub) {
+    public RLockImpl(Object ojbect, RedisClient client) {
         this.key = K_PREFIX + ojbect.hashCode();
         this.value = UUID.randomUUID().toString();
         this.channel = C_PREFIX + ojbect.hashCode();
         this.client = client;
-        this.pubsub = pubsub;
     }
 
     public String getKey() {
@@ -46,6 +45,7 @@ public class RLockImpl implements RLock {
         return "RLockImpl{" +
                 "key='" + key + '\'' +
                 ", value='" + value + '\'' +
+                ", channel='" + channel + '\'' +
                 '}';
     }
 
@@ -60,16 +60,16 @@ public class RLockImpl implements RLock {
 
     @Override
     public void lock(long leaseTime) throws InterruptedException {
-        CountDownLatch latch = pubsub.subscribe(channel, client);
+        CountDownLatch latch = PUBSUB.subscribe(channel, client);
         String ret;
-        while (true) {
+        while (latch.getCount() > 0) {
             if (leaseTime > 0) {
                 ret = client.set(key, value, "NX", "EX", leaseTime);
             } else {
                 ret = client.set(key, value, "NX");
             }
             if ("OK".equals(ret)) {
-                pubsub.unsubscribe(channel, client);
+                PUBSUB.unsubscribe(channel, client);
                 return;
             } else {
                 latch.await(100, TimeUnit.MILLISECONDS);
@@ -80,7 +80,7 @@ public class RLockImpl implements RLock {
     @Override
     public void unlock() {
         client.eval(UNLOCK_SCRIPT, key, value);
-        pubsub.unsubscribe(channel, client);
+        PUBSUB.unsubscribe(channel, client);
     }
 
     @Override

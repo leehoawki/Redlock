@@ -5,15 +5,12 @@ import redlock.connection.RedisClient;
 import redlock.connection.RedisSingle;
 import redlock.lock.RLock;
 import redlock.lock.RLockImpl;
-import redlock.pubsub.Pubsub;
 
 import java.util.Date;
 
 public class RedLock {
 
     RedisClient client;
-
-    Pubsub pubsub;
 
     RedLock(String host, int port, String password) {
         this.client = new RedisSingle(host, port, password);
@@ -25,22 +22,16 @@ public class RedLock {
 
     public static RedLock create(String host, int port, String password) {
         RedLock redLock = new RedLock(host, port, password);
-        Pubsub pubsub = new Pubsub();
-        redLock.setPubsub(pubsub);
         return redLock;
     }
 
     public RLock getLock(Object target) {
-        RLockImpl rLock = new RLockImpl(target, client, pubsub);
+        RLockImpl rLock = new RLockImpl(target, client);
         return rLock;
     }
 
     public void shutdown() {
-        this.pubsub.shutdown();
-    }
-
-    public void setPubsub(Pubsub pubsub) {
-        this.pubsub = pubsub;
+        this.client.close();
     }
 
     public static void main(String[] args) throws InterruptedException {
