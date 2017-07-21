@@ -50,8 +50,13 @@ public class RLockImpl implements RLock {
     }
 
     @Override
-    public boolean tryLock() {
-        String ret = client.set(key, value, "NX");
+    public boolean tryLock(long leaseTime) {
+        String ret;
+        if (leaseTime > 0) {
+            ret = client.set(key, value, "NX", "EX", leaseTime);
+        } else {
+            ret = client.set(key, value, "NX");
+        }
         if ("OK".equals(ret)) {
             return true;
         }
@@ -60,6 +65,10 @@ public class RLockImpl implements RLock {
 
     @Override
     public void lock(long leaseTime) throws InterruptedException {
+        if (tryLock(leaseTime)) {
+            return;
+        }
+
         CountDownLatch latch = PUBSUB.subscribe(channel, client);
         String ret;
         while (latch.getCount() > 0) {
