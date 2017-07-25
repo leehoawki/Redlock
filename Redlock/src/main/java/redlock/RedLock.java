@@ -7,10 +7,13 @@ import redlock.lock.RLock;
 import redlock.lock.RLockImpl;
 
 import java.util.Date;
+import java.util.UUID;
 
 public class RedLock {
 
     RedisClient client;
+
+    String id = UUID.randomUUID().toString();
 
     RedLock(String host, int port, String password) {
         this.client = new RedisSingle(host, port, password);
@@ -25,8 +28,8 @@ public class RedLock {
         return redLock;
     }
 
-    public RLock getLock(Object target) {
-        RLockImpl rLock = new RLockImpl(target, client);
+    public RLock getLock(String name) {
+        RLockImpl rLock = new RLockImpl(id, name, client);
         return rLock;
     }
 
