@@ -7,6 +7,10 @@ public interface RLock {
 
     void unlock();
 
+    void forceUnlock();
+
+    int getHoldCount();
+
     boolean isLocked();
 
     default boolean tryLock() throws InterruptedException {

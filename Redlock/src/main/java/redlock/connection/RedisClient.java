@@ -3,6 +3,8 @@ package redlock.connection;
 
 import redis.clients.jedis.JedisPubSub;
 
+import java.util.List;
+
 public interface RedisClient {
 
     String set(String key, String value, String nxxx, String expx, long time);
@@ -11,7 +13,9 @@ public interface RedisClient {
 
     String get(String key);
 
-    Object eval(String script, String key, String arg);
+    String hGet(String key, String field);
+
+    String eval(String script, List<String> keys, String... params);
 
     void subscribe(String channel, JedisPubSub listener);
 

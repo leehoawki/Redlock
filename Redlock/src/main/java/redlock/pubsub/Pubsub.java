@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 public class Pubsub {
+    public static final String UNLOCK_MESSAGE = "UNLOCK";
 
     Map<String, CountDownLatch> latchs;
 

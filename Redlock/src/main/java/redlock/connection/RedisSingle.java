@@ -6,11 +6,11 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.JedisPubSub;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class RedisSingle implements RedisClient {
-
     JedisPool pool;
 
     ExecutorService es;
@@ -42,9 +42,18 @@ public class RedisSingle implements RedisClient {
     }
 
     @Override
-    public Object eval(String script, String key, String arg) {
+    public String hGet(String key, String field) {
         try (Jedis jedis = pool.getResource()) {
-            return jedis.eval(script, Arrays.asList(key), Arrays.asList(arg));
+            return jedis.hget(key, field);
+        }
+    }
+
+    @Override
+    public String eval(String script, List<String> keys, String... params) {
+        try (Jedis jedis = pool.getResource()) {
+            Object ret = jedis.eval(script, keys, Arrays.asList(params));
+            if (ret == null) return null;
+            return ret.toString();
         }
     }
 
