@@ -75,7 +75,7 @@ public class RLockTest extends TestCase {
 
     @Test
     public void testLockAtMultiThread() throws Throwable {
-        int runnerCount = 4;
+        int runnerCount = 8;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
             trs[i] = new TestRunnable() {
@@ -96,7 +96,7 @@ public class RLockTest extends TestCase {
 
     @Test
     public void testLockAtMultiThread2() throws Throwable {
-        int runnerCount = 4;
+        int runnerCount = 8;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
             trs[i] = new TestRunnable() {
@@ -114,7 +114,7 @@ public class RLockTest extends TestCase {
 
     @Test
     public void testLockAtMultiThread3() throws Throwable {
-        int runnerCount = 4;
+        int runnerCount = 8;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
             trs[i] = new TestRunnable() {
