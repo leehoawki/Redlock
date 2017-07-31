@@ -1,51 +1,27 @@
 package redlock.pubsub;
 
 import redis.clients.jedis.JedisPubSub;
-import redlock.connection.RedisClient;
+import redlock.lock.RLockEntry;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 public class Pubsub {
     public static final String UNLOCK_MESSAGE = "UNLOCK";
 
-    Map<String, CountDownLatch> latchs;
-
-    Map<String, JedisPubSub> listeners;
-
-    public Pubsub() {
-        this.latchs = new ConcurrentHashMap<>();
-        this.listeners = new ConcurrentHashMap<>();
-    }
-
-    static String getKey(String channel) {
-        return channel + ":" + Thread.currentThread().getId();
-    }
-
-    public CountDownLatch subscribe(String channel, RedisClient client) {
-        String key = getKey(channel);
-        CountDownLatch value = latchs.get(key);
-        if (value != null) {
-            return value;
-        }
+    public RLockEntry subscribe(String channel) {
+        RLockEntry entry = new RLockEntry();
         CountDownLatch latch = new CountDownLatch(1);
-        latchs.put(key, latch);
         PubsubListener listener = new PubsubListener(pubsubCommand -> {
-            if (channel.equals(pubsubCommand.getChannel()) && "OK".equals(pubsubCommand.getMessage())) {
+            if (channel.equals(pubsubCommand.getChannel()) && UNLOCK_MESSAGE.equals(pubsubCommand.getMessage())) {
                 latch.countDown();
             }
         });
-        client.subscribe(channel, listener);
-        listeners.put(key, listener);
-        return latch;
+        entry.setLatch(latch);
+        entry.setPubSub(listener);
+        return entry;
     }
 
-    public void unsubscribe(String channel, RedisClient client) {
-        String key = getKey(channel);
-        JedisPubSub pubSub = listeners.remove(key);
-        if (pubSub != null) {
-            pubSub.unsubscribe();
-        }
+    public void unsubscribe(JedisPubSub pubSub) {
+        pubSub.unsubscribe();
     }
 }

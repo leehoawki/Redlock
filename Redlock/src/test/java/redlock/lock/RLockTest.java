@@ -7,6 +7,8 @@ import org.junit.Assert;
 import org.junit.Test;
 import redlock.RedLock;
 
+import java.util.Date;
+
 public class RLockTest extends TestCase {
 
     RedLock redLock;
@@ -20,7 +22,7 @@ public class RLockTest extends TestCase {
     }
 
     public void tearDown() throws InterruptedException {
-        redLock.shutdown();
+//        redLock.shutdown();
     }
 
     @Test
@@ -41,7 +43,9 @@ public class RLockTest extends TestCase {
         boolean r2 = lock.tryLock();
         Assert.assertTrue(lock.isLocked());
         Assert.assertTrue(r1);
-        Assert.assertTrue(!r2);
+        Assert.assertTrue(r2);
+        lock.unlock();
+        Assert.assertTrue(lock.isLocked());
         lock.unlock();
         Assert.assertFalse(lock.isLocked());
     }
@@ -70,40 +74,62 @@ public class RLockTest extends TestCase {
     }
 
     @Test
-    public void MultiThreadTest() throws Throwable {
-        TestRunnable runner = new TestRunnable() {
-            @Override
-            public void runTest() throws Throwable {
-                RLock lock = redLock.getLock("test");
-                System.out.println(Thread.currentThread().getName() + ":LOCKING.");
-                lock.lock();
-                System.out.println(Thread.currentThread().getName() + ":LOCKED.");
-                lock.unlock();
-                System.out.println(Thread.currentThread().getName() + ":UNLOCKED.");
-            }
-        };
-        int runnerCount = 10;
+    public void testLockAtMultiThread() throws Throwable {
+        int runnerCount = 4;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
-            trs[i] = runner;
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    RLock lock = redLock.getLock("test");
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKING.");
+                    lock.lock();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKED.");
+                    lock.unlock();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKED.");
+                }
+            };
         }
         MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
         mttr.runTestRunnables();
     }
 
     @Test
-    public void MultiThreadTest2() throws Throwable {
-        TestRunnable runner = new TestRunnable() {
-            @Override
-            public void runTest() throws Throwable {
-                System.out.println(Thread.currentThread().getName() + ":LOCKING.");
-                lock.lock(1000);
-            }
-        };
-        int runnerCount = 10;
+    public void testLockAtMultiThread2() throws Throwable {
+        int runnerCount = 4;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
-            trs[i] = runner;
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKING.");
+                    lock.lock(1000);
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKED.");
+                }
+            };
+        }
+        MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
+        mttr.runTestRunnables();
+    }
+
+    @Test
+    public void testLockAtMultiThread3() throws Throwable {
+        int runnerCount = 4;
+        TestRunnable[] trs = new TestRunnable[runnerCount];
+        for (int i = 0; i < runnerCount; i++) {
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    RLock lock = redLock.getLock("test");
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKING.");
+                    lock.lock();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKED.");
+                    Thread.sleep(1000);
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKING.");
+                    lock.unlock();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKED.");
+                }
+            };
         }
         MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
         mttr.runTestRunnables();

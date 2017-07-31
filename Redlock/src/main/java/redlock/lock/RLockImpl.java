@@ -45,30 +45,35 @@ public class RLockImpl implements RLock {
 
     @Override
     public boolean tryLock(long leaseTime) {
-        String ttl = tryAcuqire(leaseTime);
+        Long ttl = tryAcuqire(leaseTime);
         return ttl == null;
     }
 
     @Override
     public void lock(long leaseTime) throws InterruptedException {
-        if (tryLock(leaseTime)) {
+        Long ttl = tryAcuqire(leaseTime);
+        if (ttl == null) {
             return;
         }
 
-        CountDownLatch latch = PUBSUB.subscribe(channel, client);
-        String ret;
-        String value = getValue();
-        while (latch.getCount() > 0) {
-            if (leaseTime > 0) {
-                ret = client.set(key, value, "NX", "EX", leaseTime);
-            } else {
-                ret = client.set(key, value, "NX");
+        RLockEntry entry = PUBSUB.subscribe(channel);
+        client.subscribe(channel, entry.getPubSub());
+        CountDownLatch latch = entry.getLatch();
+        try {
+            while (true) {
+                ttl = tryAcuqire(leaseTime);
+                if (ttl == null) {
+                    return;
+                }
+                if (ttl > 0) {
+                    latch.await(ttl, TimeUnit.MILLISECONDS);
+                } else {
+                    latch.await(100, TimeUnit.MILLISECONDS);
+                }
             }
-            if ("OK".equals(ret)) {
-                PUBSUB.unsubscribe(channel, client);
-                return;
-            } else {
-                latch.await(100, TimeUnit.MILLISECONDS);
+        } finally {
+            if (entry.getPubSub().isSubscribed()) {
+                PUBSUB.unsubscribe(entry.getPubSub());
             }
         }
     }
@@ -107,8 +112,7 @@ public class RLockImpl implements RLock {
                         "end; " +
                         "redis.call('del', KEYS[1]); " +
                         "redis.call('publish', KEYS[2], ARGV[1]); " +
-                        "return 1; " +
-                        "end; ",
+                        "return 1;",
                 Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE, getValue());
         if (ret == null) {
             throw new IllegalMonitorStateException("Not locked by current thread, node id: " + id + " thread-id: " + Thread.currentThread().getId());
@@ -126,10 +130,10 @@ public class RLockImpl implements RLock {
 
     @Override
     public boolean isLocked() {
-        return client.get(key) != null;
+        return client.exists(key);
     }
 
-    String tryAcuqire(long leaseTime) {
+    Long tryAcuqire(long leaseTime) {
         Object ret;
         if (leaseTime > 0) {
             ret = client.eval("if (redis.call('exists', KEYS[1]) == 0) then " +
@@ -157,6 +161,6 @@ public class RLockImpl implements RLock {
         if (ret == null) {
             return null;
         }
-        return ret.toString();
+        return Long.parseLong(ret.toString());
     }
 }

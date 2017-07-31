@@ -13,6 +13,8 @@ public interface RedisClient {
 
     String get(String key);
 
+    boolean exists(String key);
+
     String hGet(String key, String field);
 
     String eval(String script, List<String> keys, String... params);

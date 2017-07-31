@@ -42,6 +42,13 @@ public class RedisSingle implements RedisClient {
     }
 
     @Override
+    public boolean exists(String key) {
+        try (Jedis jedis = pool.getResource()) {
+            return jedis.exists(key).booleanValue();
+        }
+    }
+
+    @Override
     public String hGet(String key, String field) {
         try (Jedis jedis = pool.getResource()) {
             return jedis.hget(key, field);
@@ -59,7 +66,7 @@ public class RedisSingle implements RedisClient {
 
     @Override
     public void subscribe(String channel, JedisPubSub listener) {
-        es.submit(() -> {
+        es.execute(() -> {
             try (Jedis jedis = pool.getResource()) {
                 jedis.subscribe(listener, channel);
             }
