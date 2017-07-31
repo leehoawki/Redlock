@@ -13,8 +13,6 @@ public class RLockImpl implements RLock {
 
     static final String C_PREFIX = "REDLOCK.CHANNEL.";
 
-    static final String UNLOCK_SCRIPT = "if redis.call(\"get\",KEYS[1]) == ARGV[1] then return redis.call(\"del\",KEYS[1]) else return 0 end";
-
     String id;
 
     String key;
@@ -32,8 +30,8 @@ public class RLockImpl implements RLock {
         this.client = client;
     }
 
-    public String getValue(long threadId) {
-        return id + ":" + threadId;
+    public String getValue() {
+        return id + ":" + Thread.currentThread().getId();
     }
 
     @Override
@@ -47,19 +45,8 @@ public class RLockImpl implements RLock {
 
     @Override
     public boolean tryLock(long leaseTime) {
-        tryAcuqire(leaseTime);
-        if (ttl == null) {
-            return true;
-        }
-        if (leaseTime > 0) {
-            ret = client.set(key, value, "NX", "EX", leaseTime);
-        } else {
-            ret = client.set(key, value, "NX");
-        }
-        if ("OK".equals(ret)) {
-            return true;
-        }
-        return false;
+        String ttl = tryAcuqire(leaseTime);
+        return ttl == null;
     }
 
     @Override
@@ -103,7 +90,7 @@ public class RLockImpl implements RLock {
                         "redis.call('publish', KEYS[2], ARGV[1]); " +
                         "return 1; " +
                         "end; ",
-                Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE, getValue(Thread.currentThread().getId()));
+                Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE, getValue());
         if (ret == null) {
             throw new IllegalMonitorStateException("Not locked by current thread, node id: " + id + " thread-id: " + Thread.currentThread().getId());
         }
@@ -112,17 +99,17 @@ public class RLockImpl implements RLock {
     @Override
     public void forceUnlock() {
         Object ret = client.eval("if (redis.call('exists', KEYS[1]) == 0) then " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
-                    "return 1; " +
-                    "end;" +
-                    "if (redis.call('hexists', KEYS[1], ARGV[2]) == 0) then " +
-                    "return nil;" +
-                    "end; " +
-                    "redis.call('del', KEYS[1]); " +
-                    "redis.call('publish', KEYS[2], ARGV[1]); " +
-                    "return 1; " +
-                    "end; ",
-            Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE, getValue(Thread.currentThread().getId()));
+                        "redis.call('publish', KEYS[2], ARGV[1]); " +
+                        "return 1; " +
+                        "end;" +
+                        "if (redis.call('hexists', KEYS[1], ARGV[2]) == 0) then " +
+                        "return nil;" +
+                        "end; " +
+                        "redis.call('del', KEYS[1]); " +
+                        "redis.call('publish', KEYS[2], ARGV[1]); " +
+                        "return 1; " +
+                        "end; ",
+                Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE, getValue());
         if (ret == null) {
             throw new IllegalMonitorStateException("Not locked by current thread, node id: " + id + " thread-id: " + Thread.currentThread().getId());
         }
@@ -130,7 +117,7 @@ public class RLockImpl implements RLock {
 
     @Override
     public int getHoldCount() {
-        String ret = client.hGet(key, getValue(Thread.currentThread().getId()));
+        String ret = client.hGet(key, getValue());
         if (ret == null) {
             return 0;
         }
@@ -142,8 +129,8 @@ public class RLockImpl implements RLock {
         return client.get(key) != null;
     }
 
-    boolean tryAcuqire(long leaseTime) {
-        String ret;
+    String tryAcuqire(long leaseTime) {
+        Object ret;
         if (leaseTime > 0) {
             ret = client.eval("if (redis.call('exists', KEYS[1]) == 0) then " +
                     "redis.call('hset', KEYS[1], ARGV[2], 1); " +
@@ -155,7 +142,7 @@ public class RLockImpl implements RLock {
                     "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                     "return nil; " +
                     "end; " +
-                    "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), String.valueOf(leaseTime), getValue(Thread.currentThread().getId()));
+                    "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), String.valueOf(leaseTime), getValue());
         } else {
             ret = client.eval("if (redis.call('exists', KEYS[1]) == 0) then " +
                     "redis.call('hset', KEYS[1], ARGV[1], 1); " +
@@ -165,12 +152,11 @@ public class RLockImpl implements RLock {
                     "redis.call('hincrby', KEYS[1], ARGV[1], 1); " +
                     "return nil; " +
                     "end; " +
-                    "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), getValue(Thread.currentThread().getId()));
+                    "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), getValue());
         }
-
-        if ("OK".equals(ret)) {
-            return true;
+        if (ret == null) {
+            return null;
         }
-        return false;
+        return ret.toString();
     }
 }

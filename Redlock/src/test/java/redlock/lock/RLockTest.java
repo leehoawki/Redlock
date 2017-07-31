@@ -1,11 +1,11 @@
-package redlock;
+package redlock.lock;
 
 import junit.framework.TestCase;
 import net.sourceforge.groboutils.junit.v1.MultiThreadedTestRunner;
 import net.sourceforge.groboutils.junit.v1.TestRunnable;
 import org.junit.Assert;
 import org.junit.Test;
-import redlock.lock.RLock;
+import redlock.RedLock;
 
 public class RLockTest extends TestCase {
 
@@ -27,6 +27,9 @@ public class RLockTest extends TestCase {
     public void testLock() throws InterruptedException {
         Assert.assertFalse(lock.isLocked());
         lock.lock();
+        lock.lock();
+        Assert.assertTrue(lock.isLocked());
+        lock.unlock();
         Assert.assertTrue(lock.isLocked());
         lock.unlock();
         Assert.assertFalse(lock.isLocked());
@@ -40,6 +43,29 @@ public class RLockTest extends TestCase {
         Assert.assertTrue(r1);
         Assert.assertTrue(!r2);
         lock.unlock();
+        Assert.assertFalse(lock.isLocked());
+    }
+
+    @Test
+    public void testUnlock() throws InterruptedException {
+        Assert.assertFalse(lock.isLocked());
+        lock.lock();
+        Assert.assertTrue(lock.isLocked());
+        lock.unlock();
+        Assert.assertFalse(lock.isLocked());
+        lock.unlock();
+        Assert.assertFalse(lock.isLocked());
+        lock.unlock();
+        Assert.assertFalse(lock.isLocked());
+    }
+
+    @Test
+    public void testForceUnlock() throws InterruptedException {
+        Assert.assertFalse(lock.isLocked());
+        lock.lock();
+        lock.lock();
+        Assert.assertTrue(lock.isLocked());
+        lock.forceUnlock();
         Assert.assertFalse(lock.isLocked());
     }
 
@@ -71,10 +97,7 @@ public class RLockTest extends TestCase {
             @Override
             public void runTest() throws Throwable {
                 System.out.println(Thread.currentThread().getName() + ":LOCKING.");
-                lock.lock();
-                System.out.println(Thread.currentThread().getName() + ":LOCKED.");
-                lock.unlock();
-                System.out.println(Thread.currentThread().getName() + ":UNLOCKED.");
+                lock.lock(1000);
             }
         };
         int runnerCount = 10;

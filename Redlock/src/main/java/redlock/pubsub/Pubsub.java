@@ -43,7 +43,6 @@ public class Pubsub {
 
     public void unsubscribe(String channel, RedisClient client) {
         String key = getKey(channel);
-        client.publish(channel, "OK");
         JedisPubSub pubSub = listeners.remove(key);
         if (pubSub != null) {
             pubSub.unsubscribe();
