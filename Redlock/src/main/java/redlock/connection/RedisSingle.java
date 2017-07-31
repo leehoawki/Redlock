@@ -82,7 +82,7 @@ public class RedisSingle implements RedisClient {
 
     @Override
     public void close() {
+        this.es.shutdown();
         this.pool.close();
-        this.es.shutdownNow();
     }
 }

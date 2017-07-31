@@ -22,7 +22,7 @@ public class RLockTest extends TestCase {
     }
 
     public void tearDown() throws InterruptedException {
-//        redLock.shutdown();
+        redLock.shutdown();
     }
 
     @Test
