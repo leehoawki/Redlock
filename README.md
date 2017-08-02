@@ -2,7 +2,7 @@
 基于Redis的分布式锁。
 
 ### Lock
-创建一个RedLock全局对象，默认连接localhost:6379：
+创建一个RedLock全局对象，默认连接localhost:6379，
 
 	RedLock redLock = RedLock.create();
 
