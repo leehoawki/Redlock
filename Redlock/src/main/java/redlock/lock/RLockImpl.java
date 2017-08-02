@@ -57,8 +57,8 @@ public class RLockImpl implements RLock {
         }
 
         RLockEntry entry = PUBSUB.subscribe(channel);
-        client.subscribe(channel, entry.getPubSub());
         CountDownLatch latch = entry.getLatch();
+        client.subscribe(channel, entry.getPubSub());
         try {
             while (true) {
                 ttl = tryAcuqire(leaseTime);
@@ -134,7 +134,7 @@ public class RLockImpl implements RLock {
     }
 
     Long tryAcuqire(long leaseTime) {
-        Object ret;
+        String ret;
         if (leaseTime > 0) {
             ret = client.eval("if (redis.call('exists', KEYS[1]) == 0) then " +
                     "redis.call('hset', KEYS[1], ARGV[2], 1); " +

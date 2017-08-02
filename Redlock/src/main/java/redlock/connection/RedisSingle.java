@@ -17,7 +17,7 @@ public class RedisSingle implements RedisClient {
 
     public RedisSingle(String host, int port, String password) {
         JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxTotal(1000);
+        config.setMaxTotal(255);
         pool = new JedisPool(config, host, port, 2000, password);
         this.es = Executors.newCachedThreadPool();
     }

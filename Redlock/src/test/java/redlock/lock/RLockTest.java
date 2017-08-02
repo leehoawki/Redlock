@@ -96,14 +96,14 @@ public class RLockTest extends TestCase {
 
     @Test
     public void testLockAtMultiThread2() throws Throwable {
-        int runnerCount = 16;
+        int runnerCount = 20;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
             trs[i] = new TestRunnable() {
                 @Override
                 public void runTest() throws Throwable {
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKING.");
-                    lock.lock(1000);
+                    lock.lock(100);
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKED.");
                 }
             };
@@ -114,7 +114,7 @@ public class RLockTest extends TestCase {
 
     @Test
     public void testLockAtMultiThread3() throws Throwable {
-        int runnerCount = 16;
+        int runnerCount = 20;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
             trs[i] = new TestRunnable() {
@@ -124,7 +124,7 @@ public class RLockTest extends TestCase {
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKING.");
                     lock.lock();
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKED.");
-                    Thread.sleep(1000);
+                    Thread.sleep(100);
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKING.");
                     lock.unlock();
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKED.");
