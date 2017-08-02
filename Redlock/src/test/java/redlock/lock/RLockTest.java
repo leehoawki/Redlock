@@ -96,7 +96,7 @@ public class RLockTest extends TestCase {
 
     @Test
     public void testLockAtMultiThread2() throws Throwable {
-        int runnerCount = 20;
+        int runnerCount = 200;
         TestRunnable[] trs = new TestRunnable[runnerCount];
         for (int i = 0; i < runnerCount; i++) {
             trs[i] = new TestRunnable() {
