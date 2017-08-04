@@ -2,6 +2,7 @@ package redlock.lock;
 
 import redlock.connection.RedisClient;
 import redlock.pubsub.Pubsub;
+import redlock.pubsub.PubsubEntry;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -13,13 +14,13 @@ public class RLockImpl implements RLock {
 
     static final String C_PREFIX = "REDLOCK.CHANNEL.";
 
-    String id;
+    private String id;
 
-    String key;
+    private String key;
 
-    String channel;
+    private String channel;
 
-    RedisClient client;
+    private RedisClient client;
 
     static Pubsub PUBSUB = new Pubsub();
 
@@ -56,7 +57,7 @@ public class RLockImpl implements RLock {
             return;
         }
 
-        RLockEntry entry = PUBSUB.subscribe(channel);
+        PubsubEntry entry = PUBSUB.subscribe(channel);
         CountDownLatch latch = entry.getLatch();
         client.subscribe(channel, entry.getPubSub());
         try {

@@ -1,10 +1,10 @@
-package redlock.lock;
+package redlock.pubsub;
 
 import redis.clients.jedis.JedisPubSub;
 
 import java.util.concurrent.CountDownLatch;
 
-public class RLockEntry {
+public class PubsubEntry {
     CountDownLatch latch;
 
     JedisPubSub pubSub;

@@ -5,6 +5,8 @@ import redlock.connection.RedisClient;
 import redlock.connection.RedisSingle;
 import redlock.lock.RLock;
 import redlock.lock.RLockImpl;
+import redlock.semaphore.RSemaphore;
+import redlock.semaphore.RSemaphoreImpl;
 
 import java.util.UUID;
 
@@ -30,6 +32,11 @@ public class RedLock {
     public RLock getLock(String name) {
         RLockImpl rLock = new RLockImpl(id, name, client);
         return rLock;
+    }
+
+    public RSemaphore getSemaphore(String name) {
+        RSemaphoreImpl rSemaphore = new RSemaphoreImpl(id, name, client);
+        return rSemaphore;
     }
 
     public void shutdown() {
