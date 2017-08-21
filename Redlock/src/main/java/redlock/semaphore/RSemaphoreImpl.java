@@ -68,7 +68,6 @@ public class RSemaphoreImpl implements RSemaphore {
         client.eval("local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
                         "redis.call('publish', KEYS[2], value); ",
                 Arrays.asList(key, channel), String.valueOf(permits));
-
     }
 
     boolean tryAcquireInner(int permits) {
@@ -83,10 +82,7 @@ public class RSemaphoreImpl implements RSemaphore {
                         "end; " +
                         "return 0;",
                 Arrays.asList(key), String.valueOf(permits));
-        if ("1".equals(ret)) {
-            return true;
-        }
-        return false;
+        return "1".equals(ret);
     }
 
     @Override
