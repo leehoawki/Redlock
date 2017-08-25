@@ -3,6 +3,7 @@ package redlock;
 
 import redlock.connection.RedisClient;
 import redlock.connection.RedisSingle;
+import redlock.latch.RLatchImpl;
 import redlock.lock.RLock;
 import redlock.lock.RLockImpl;
 import redlock.semaphore.RSemaphore;
@@ -37,6 +38,11 @@ public class RedLock {
     public RSemaphore getSemaphore(String name) {
         RSemaphoreImpl rSemaphore = new RSemaphoreImpl(id, name, client);
         return rSemaphore;
+    }
+
+    public RLatchImpl getLatch(String name, int count) {
+        RLatchImpl rLatch = new RLatchImpl(id, name, count, client);
+        return rLatch;
     }
 
     public void shutdown() {
