@@ -1,15 +1,17 @@
 package redlock.latch;
 
 import junit.framework.TestCase;
+import net.sourceforge.groboutils.junit.v1.MultiThreadedTestRunner;
+import net.sourceforge.groboutils.junit.v1.TestRunnable;
+import org.junit.Assert;
 import org.junit.Test;
 import redlock.RedLock;
-import redlock.semaphore.RSemaphore;
+
+import java.util.Date;
 
 public class RLatchTest extends TestCase {
 
     RedLock redLock;
-
-    RLatch latch;
 
     @Override
     public void setUp() {
@@ -21,7 +23,43 @@ public class RLatchTest extends TestCase {
     }
 
     @Test
-    public void testAcquireAtMultiThread() throws Throwable {
+    public void testCountdown() {
+        RLatch latch = redLock.getLatch("test", 2);
+        Assert.assertEquals(2, latch.getCount());
+        latch.countDown();
+        Assert.assertEquals(1, latch.getCount());
+        latch.countDown();
+        Assert.assertEquals(0, latch.getCount());
+    }
 
+    @Test
+    public void testAwaitAtMultiThread() throws Throwable {
+        int runnerCount = 8;
+        TestRunnable[] trs = new TestRunnable[runnerCount + 1];
+        RLatch latch = redLock.getLatch("test", runnerCount);
+        for (int i = 0; i < runnerCount; i++) {
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":AWATING.");
+                    latch.await();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":PASS.");
+                }
+            };
+        }
+
+        trs[runnerCount] = new TestRunnable() {
+            @Override
+            public void runTest() throws Throwable {
+                for (int i = 0; i < runnerCount; i++) {
+                    Thread.sleep(1000);
+                    System.out.println(new Date() + ":" + "COUNTDOWN.");
+                    latch.countDown();
+                }
+            }
+        };
+
+        MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
+        mttr.runTestRunnables();
     }
 }

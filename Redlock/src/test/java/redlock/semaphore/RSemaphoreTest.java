@@ -54,7 +54,7 @@ public class RSemaphoreTest extends TestCase {
         int runnerCount = 8;
         TestRunnable[] trs = new TestRunnable[runnerCount + 1];
         for (int i = 0; i < runnerCount; i++) {
-            final int permit = i;
+            final int permit = 100;
             trs[i] = new TestRunnable() {
                 @Override
                 public void runTest() throws Throwable {
@@ -70,7 +70,7 @@ public class RSemaphoreTest extends TestCase {
             public void runTest() throws Throwable {
                 for (int i = 0; i < runnerCount; i++) {
                     Thread.sleep(1000);
-                    semaphore.release(i);
+                    semaphore.release(1);
                 }
             }
         };
