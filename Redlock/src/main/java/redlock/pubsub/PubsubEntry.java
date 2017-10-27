@@ -9,12 +9,20 @@ public class PubsubEntry {
 
     JedisPubSub pubSub;
 
-    public CountDownLatch getLatch() {
-        return latch;
+    PubsubEntry(){
+        this.latch = new CountDownLatch(1);
     }
 
-    public void setLatch(CountDownLatch latch) {
-        this.latch = latch;
+    public void countDown(){
+        latch.countDown();
+    }
+
+    public CountDownLatch getLatch() {
+        if (latch.getCount() == 0) {
+            latch = new CountDownLatch(1);
+            return latch;
+        }
+        return latch;
     }
 
     public JedisPubSub getPubSub() {

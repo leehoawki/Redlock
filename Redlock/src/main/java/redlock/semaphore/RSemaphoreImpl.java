@@ -65,9 +65,9 @@ public class RSemaphoreImpl implements RSemaphore {
         if (permits < 0) {
             return;
         }
-        client.eval("local value = redis.call('incrby', KEYS[1], ARGV[1]); " +
-                        "redis.call('publish', KEYS[2], value); ",
-                Arrays.asList(key, channel), String.valueOf(permits));
+        client.eval("local value = redis.call('incrby', KEYS[1], ARGV[2]); " +
+                        "redis.call('publish', KEYS[2], ARGV[1]); ",
+                Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE, String.valueOf(permits));
     }
 
     boolean tryAcquireInner(int permits) {

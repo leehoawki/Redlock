@@ -5,8 +5,8 @@ import redlock.pubsub.Pubsub;
 import redlock.pubsub.PubsubEntry;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
+import java.util.concurrent.*;
 
 public class RLockImpl implements RLock {
 
@@ -23,6 +23,10 @@ public class RLockImpl implements RLock {
     private RedisClient client;
 
     static Pubsub PUBSUB = new Pubsub();
+
+    Map<String, Future<?>> expirationRenewalMap = new ConcurrentHashMap<>();
+
+    static final int internalLockLeaseTime = 300;
 
     public RLockImpl(String id, String name, RedisClient client) {
         this.id = id;
@@ -58,7 +62,6 @@ public class RLockImpl implements RLock {
         }
 
         PubsubEntry entry = PUBSUB.subscribe(channel);
-        CountDownLatch latch = entry.getLatch();
         client.subscribe(channel, entry.getPubSub());
         try {
             while (true) {
@@ -66,6 +69,7 @@ public class RLockImpl implements RLock {
                 if (ttl == null) {
                     return;
                 }
+                CountDownLatch latch = entry.getLatch();
                 if (ttl > 0) {
                     latch.await(ttl, TimeUnit.MILLISECONDS);
                 } else {
@@ -100,6 +104,7 @@ public class RLockImpl implements RLock {
         if (ret == null) {
             throw new IllegalMonitorStateException("Not locked by current thread, node id: " + id + " thread-id: " + Thread.currentThread().getId());
         }
+        cancelExpirationRenewal();
     }
 
     @Override
@@ -118,6 +123,7 @@ public class RLockImpl implements RLock {
         if (ret == null) {
             throw new IllegalMonitorStateException("Not locked by current thread, node id: " + id + " thread-id: " + Thread.currentThread().getId());
         }
+        cancelExpirationRenewal();
     }
 
     @Override
@@ -150,18 +156,43 @@ public class RLockImpl implements RLock {
                     "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), String.valueOf(leaseTime), getValue());
         } else {
             ret = client.eval("if (redis.call('exists', KEYS[1]) == 0) then " +
-                    "redis.call('hset', KEYS[1], ARGV[1], 1); " +
+                    "redis.call('hset', KEYS[1], ARGV[2], 1); " +
+                    "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                     "return nil; " +
                     "end; " +
-                    "if (redis.call('hexists', KEYS[1], ARGV[1]) == 1) then " +
-                    "redis.call('hincrby', KEYS[1], ARGV[1], 1); " +
+                    "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                    "redis.call('hincrby', KEYS[1], ARGV[2], 1); " +
+                    "redis.call('pexpire', KEYS[1], ARGV[1]); " +
                     "return nil; " +
                     "end; " +
-                    "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), getValue());
+                    "return redis.call('pttl', KEYS[1]);", Arrays.asList(key), String.valueOf(internalLockLeaseTime), getValue());
+            scheduleExpirationRenewal();
         }
         if (ret == null) {
             return null;
         }
         return Long.parseLong(ret.toString());
+    }
+
+    void scheduleExpirationRenewal() {
+        if (expirationRenewalMap.containsKey(getValue())) {
+            return;
+        }
+
+        Future<?> future = client.schedule(internalLockLeaseTime / 3, internalLockLeaseTime / 3, TimeUnit.MICROSECONDS,
+                "if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then " +
+                        "redis.call('pexpire', KEYS[1], ARGV[1]); " +
+                        "return 1; " +
+                        "end; " +
+                        "return 0;",
+                Arrays.asList(key), String.valueOf(internalLockLeaseTime), getValue());
+        expirationRenewalMap.put(getValue(), future);
+    }
+
+    void cancelExpirationRenewal() {
+        Future<?> future = expirationRenewalMap.remove(getValue());
+        if (future != null) {
+            future.cancel(true);
+        }
     }
 }

@@ -7,8 +7,7 @@ import redis.clients.jedis.JedisPubSub;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 public class RedisSingle implements RedisClient {
     JedisPool pool1;
@@ -17,12 +16,15 @@ public class RedisSingle implements RedisClient {
 
     ExecutorService es;
 
+    ScheduledExecutorService ses;
+
     public RedisSingle(String host, int port, String password) {
         JedisPoolConfig config = new JedisPoolConfig();
         config.setMaxTotal(255);
         pool1 = new JedisPool(config, host, port, 2000, password);
         pool2 = new JedisPool(config, host, port, 2000, password);
-        this.es = Executors.newCachedThreadPool();
+        es = Executors.newCachedThreadPool();
+        ses = Executors.newScheduledThreadPool(20);
     }
 
     @Override
@@ -70,6 +72,18 @@ public class RedisSingle implements RedisClient {
     }
 
     @Override
+    public Future<?> schedule(long initDelay, long delay, TimeUnit timeUnit, String script, List<String> keys, String... params) {
+        return ses.scheduleWithFixedDelay(new Runnable() {
+            @Override
+            public void run() {
+                try (Jedis jedis = pool1.getResource()) {
+                    jedis.eval(script, keys, Arrays.asList(params));
+                }
+            }
+        }, initDelay, delay, timeUnit);
+    }
+
+    @Override
     public void subscribe(String channel, JedisPubSub listener) {
         es.execute(() -> {
             try (Jedis jedis = pool2.getResource()) {
@@ -88,6 +102,7 @@ public class RedisSingle implements RedisClient {
     @Override
     public void close() {
         this.es.shutdown();
+        this.ses.shutdown();
         this.pool1.close();
         this.pool2.close();
     }

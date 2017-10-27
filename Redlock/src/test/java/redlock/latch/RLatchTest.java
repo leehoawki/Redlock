@@ -34,7 +34,7 @@ public class RLatchTest extends TestCase {
 
     @Test
     public void testAwaitAtMultiThread() throws Throwable {
-        int runnerCount = 8;
+        int runnerCount = 80;
         TestRunnable[] trs = new TestRunnable[runnerCount + 1];
         RLatch latch = redLock.getLatch("test", runnerCount);
         for (int i = 0; i < runnerCount; i++) {
@@ -52,7 +52,7 @@ public class RLatchTest extends TestCase {
             @Override
             public void runTest() throws Throwable {
                 for (int i = 0; i < runnerCount; i++) {
-                    Thread.sleep(1000);
+                    Thread.sleep(10);
                     System.out.println(new Date() + ":" + "COUNTDOWN.");
                     latch.countDown();
                 }
