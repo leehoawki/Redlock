@@ -41,7 +41,8 @@ public class RLatchImpl implements RLatch {
         client.eval("local value = redis.call('get', KEYS[1]); " +
                 "if (value ~= false and tonumber(value) >= 1) then " +
                 "local val = redis.call('decrby', KEYS[1], 1); " +
-                "end; ", Arrays.asList(key));
+                "redis.call('publish', KEYS[2], ARGV[1])" +
+                "end; ", Arrays.asList(key, channel), Pubsub.UNLOCK_MESSAGE);
     }
 
     @Override
@@ -60,13 +61,13 @@ public class RLatchImpl implements RLatch {
         }
 
         PubsubEntry entry = PUBSUB.subscribe(channel);
-        CountDownLatch latch = entry.getLatch();
         client.subscribe(channel, entry.getPubSub());
         try {
             while (true) {
                 if (tryAcuqire()) {
                     return;
                 }
+                CountDownLatch latch = entry.getLatch();
                 latch.await(100, TimeUnit.MILLISECONDS);
             }
         } finally {

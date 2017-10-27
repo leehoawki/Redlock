@@ -39,13 +39,13 @@ public class RSemaphoreImpl implements RSemaphore {
         }
 
         PubsubEntry entry = PUBSUB.subscribe(channel);
-        CountDownLatch latch = entry.getLatch();
         client.subscribe(channel, entry.getPubSub());
         try {
             while (true) {
                 if (tryAcquireInner(permits)) {
                     return;
                 }
+                CountDownLatch latch = entry.getLatch();
                 latch.await(100, TimeUnit.MILLISECONDS);
             }
         } finally {
