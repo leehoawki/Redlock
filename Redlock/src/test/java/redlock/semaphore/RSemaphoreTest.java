@@ -78,4 +78,40 @@ public class RSemaphoreTest extends TestCase {
         MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
         mttr.runTestRunnables();
     }
+
+    @Test
+    public void testAcquireAtInstance() throws Throwable {
+        int runnerCount = 8;
+        TestRunnable[] trs = new TestRunnable[runnerCount + 1];
+        for (int i = 0; i < runnerCount; i++) {
+            final int permit = 1;
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    RedLock rl = RedLock.create();
+                    RSemaphore s = rl.getSemaphore("test");
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":ACQUIRING.");
+                    s.acquire(permit);
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":ACQUIRED.");
+                    rl.shutdown();
+                }
+            };
+        }
+
+        trs[runnerCount] = new TestRunnable() {
+            @Override
+            public void runTest() throws Throwable {
+                for (int i = 0; i < runnerCount; i++) {
+                    Thread.sleep(1000);
+                    RedLock rl = RedLock.create();
+                    RSemaphore s = rl.getSemaphore("test");
+                    s.release(1);
+                    rl.shutdown();
+                }
+            }
+        };
+
+        MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
+        mttr.runTestRunnables();
+    }
 }

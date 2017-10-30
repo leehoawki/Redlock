@@ -45,6 +45,11 @@ public class RedLock {
         return rLatch;
     }
 
+    public RLatchImpl getLatch(String name) {
+        RLatchImpl rLatch = new RLatchImpl(id, name, 0, client);
+        return rLatch;
+    }
+
     public void shutdown() {
         this.client.close();
     }

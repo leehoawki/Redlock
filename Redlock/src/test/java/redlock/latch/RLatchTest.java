@@ -62,4 +62,42 @@ public class RLatchTest extends TestCase {
         MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
         mttr.runTestRunnables();
     }
+
+
+    @Test
+    public void testAwaitAtInstance() throws Throwable {
+        int runnerCount = 80;
+        TestRunnable[] trs = new TestRunnable[runnerCount + 1];
+        RLatch latch = redLock.getLatch("test", runnerCount);
+        for (int i = 0; i < runnerCount; i++) {
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    RedLock rl = RedLock.create();
+                    RLatch l = redLock.getLatch("test");
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":AWATING.");
+                    l.await();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":PASS.");
+                    rl.shutdown();
+                }
+            };
+        }
+
+        trs[runnerCount] = new TestRunnable() {
+            @Override
+            public void runTest() throws Throwable {
+                for (int i = 0; i < runnerCount; i++) {
+                    RedLock rl = RedLock.create();
+                    Thread.sleep(10);
+                    RLatch l = redLock.getLatch("test");
+                    System.out.println(new Date() + ":" + "COUNTDOWN.");
+                    l.countDown();
+                    rl.shutdown();
+                }
+            }
+        };
+
+        MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
+        mttr.runTestRunnables();
+    }
 }

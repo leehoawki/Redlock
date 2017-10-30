@@ -94,6 +94,28 @@ public class RLockTest extends TestCase {
     }
 
     @Test
+    public void testLockAtMultiInstance() throws Throwable {
+        int runnerCount = 8;
+        TestRunnable[] trs = new TestRunnable[runnerCount];
+        for (int i = 0; i < runnerCount; i++)
+            trs[i] = new TestRunnable() {
+                @Override
+                public void runTest() throws Throwable {
+                    RedLock rl = RedLock.create();
+                    RLock lock = rl.getLock("test");
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKING.");
+                    lock.lock();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":LOCKED.");
+                    lock.unlock();
+                    System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKED.");
+                    rl.shutdown();
+                }
+            };
+        MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
+        mttr.runTestRunnables();
+    }
+
+    @Test
     public void testLockAtMultiThread2() throws Throwable {
         int runnerCount = 200;
         TestRunnable[] trs = new TestRunnable[runnerCount];
