@@ -73,12 +73,9 @@ public class RedisSingle implements RedisClient {
 
     @Override
     public Future<?> schedule(long initDelay, long delay, TimeUnit timeUnit, String script, List<String> keys, String... params) {
-        return ses.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                try (Jedis jedis = pool1.getResource()) {
-                    jedis.eval(script, keys, Arrays.asList(params));
-                }
+        return ses.scheduleWithFixedDelay(() -> {
+            try (Jedis jedis = pool1.getResource()) {
+                jedis.eval(script, keys, Arrays.asList(params));
             }
         }, initDelay, delay, timeUnit);
     }

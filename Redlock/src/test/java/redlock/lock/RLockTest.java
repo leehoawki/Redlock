@@ -77,7 +77,7 @@ public class RLockTest extends TestCase {
     public void testLockAtMultiThread() throws Throwable {
         int runnerCount = 8;
         TestRunnable[] trs = new TestRunnable[runnerCount];
-        for (int i = 0; i < runnerCount; i++) {
+        for (int i = 0; i < runnerCount; i++)
             trs[i] = new TestRunnable() {
                 @Override
                 public void runTest() throws Throwable {
@@ -89,7 +89,6 @@ public class RLockTest extends TestCase {
                     System.out.println(new Date() + ":" + Thread.currentThread().getName() + ":UNLOCKED.");
                 }
             };
-        }
         MultiThreadedTestRunner mttr = new MultiThreadedTestRunner(trs);
         mttr.runTestRunnables();
     }
