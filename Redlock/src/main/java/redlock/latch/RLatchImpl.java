@@ -6,7 +6,6 @@ import redlock.pubsub.Pubsub;
 import redlock.pubsub.PubsubEntry;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class RLatchImpl implements RLatch {
@@ -67,8 +66,7 @@ public class RLatchImpl implements RLatch {
                 if (tryAcuqire()) {
                     return;
                 }
-                CountDownLatch latch = entry.getLatch();
-                latch.await(100, TimeUnit.MILLISECONDS);
+                entry.getLatch().tryAcquire(100, TimeUnit.MILLISECONDS);
             }
         } finally {
             if (entry.getPubSub().isSubscribed()) {

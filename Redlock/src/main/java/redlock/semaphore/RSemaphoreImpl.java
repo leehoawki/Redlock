@@ -6,7 +6,6 @@ import redlock.pubsub.Pubsub;
 import redlock.pubsub.PubsubEntry;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class RSemaphoreImpl implements RSemaphore {
@@ -45,8 +44,7 @@ public class RSemaphoreImpl implements RSemaphore {
                 if (tryAcquireInner(permits)) {
                     return;
                 }
-                CountDownLatch latch = entry.getLatch();
-                latch.await(100, TimeUnit.MILLISECONDS);
+                entry.getLatch().tryAcquire(100, TimeUnit.MILLISECONDS);
             }
         } finally {
             if (entry.getPubSub().isSubscribed()) {

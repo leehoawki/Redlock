@@ -69,11 +69,10 @@ public class RLockImpl implements RLock {
                 if (ttl == null) {
                     return;
                 }
-                CountDownLatch latch = entry.getLatch();
                 if (ttl > 0) {
-                    latch.await(ttl, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(ttl, TimeUnit.MILLISECONDS);
                 } else {
-                    latch.await(100, TimeUnit.MILLISECONDS);
+                    entry.getLatch().tryAcquire(100, TimeUnit.MILLISECONDS);
                 }
             }
         } finally {

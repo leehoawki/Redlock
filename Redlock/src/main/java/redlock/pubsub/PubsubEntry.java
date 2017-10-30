@@ -2,26 +2,22 @@ package redlock.pubsub;
 
 import redis.clients.jedis.JedisPubSub;
 
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 public class PubsubEntry {
-    CountDownLatch latch;
+    Semaphore latch;
 
     JedisPubSub pubSub;
 
     PubsubEntry(){
-        this.latch = new CountDownLatch(1);
+        this.latch = new Semaphore(0);
     }
 
     public void countDown(){
-        latch.countDown();
+        latch.release();
     }
 
-    public CountDownLatch getLatch() {
-        if (latch.getCount() == 0) {
-            latch = new CountDownLatch(1);
-            return latch;
-        }
+    public Semaphore getLatch() {
         return latch;
     }
 
